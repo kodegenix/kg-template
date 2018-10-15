@@ -1,0 +1,22 @@
+[package]
+name = "kg-template"
+version = "0.1.0"
+authors = ["Jakub Chłapiński <jakub.chlapinski@kodegenix.pl>"]
+description = """
+Template engine with syntax based on Apache Velocity
+"""
+readme = "README.md"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/Kodegenix/kg-template"
+
+[dependencies]
+kg-diag = "0.1"
+kg-diag-derive = "0.1"
+kg-display = "0.1"
+kg-display-derive = "0.1"
+kg-io = "0.1"
+kg-tree = "0.1"
+kg-utils = "0.2"
+serde = "1.0"
+serde_derive = "1.0"
+toml = "0.4"
