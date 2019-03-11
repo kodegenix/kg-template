@@ -1,20 +1,14 @@
-#![feature(box_syntax, specialization)]
+#![feature(specialization)]
 
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate toml;
 
 #[macro_use]
 extern crate kg_diag;
 #[macro_use]
 extern crate kg_diag_derive;
-extern crate kg_display;
 #[macro_use]
 extern crate kg_display_derive;
-extern crate kg_io;
-extern crate kg_tree;
-extern crate kg_utils;
 
 
 use kg_diag::*;

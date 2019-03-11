@@ -353,7 +353,7 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
 pub fn build(f: Fragment, r: &mut CharReader) -> Result<Segment, Error> {
     fn build_opt(b: Option<Box<Fragment>>, r: &mut CharReader) -> Result<Option<Box<Segment>>, Error> {
         Ok(match b {
-            Some(b) => Some(box build(*b, r)?),
+            Some(b) => Some(Box::new(build(*b, r)?)),
             None => None,
         })
     }

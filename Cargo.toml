@@ -8,6 +8,7 @@ Template engine with syntax based on Apache Velocity
 readme = "README.md"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/Kodegenix/kg-template"
+edition = "2018"
 
 [dependencies]
 kg-diag = "0.1"
