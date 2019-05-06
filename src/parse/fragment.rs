@@ -3,8 +3,7 @@ use super::*;
 use std::cell::{RefCell, RefMut};
 use std::borrow::Cow;
 
-use kg_tree::opath::{Opath, Scope, ScopeMut};
-use kg_tree::NodeRef;
+use kg_tree::opath::Opath;
 use kg_display::ListDisplay;
 
 

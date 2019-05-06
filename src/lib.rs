@@ -3,7 +3,6 @@
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use]
 extern crate kg_diag;
 #[macro_use]
 extern crate kg_diag_derive;
@@ -19,9 +18,6 @@ use kg_tree::opath::*;
 pub mod parse;
 mod segment;
 mod render;
-
-use std::cell::RefCell;
-use std::borrow::Cow;
 
 pub use parse::{Parser, Error as ParseError};
 pub use render::Error as RenderError;
