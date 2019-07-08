@@ -1,28 +1,25 @@
 #![feature(specialization)]
 
-#[macro_use]
-extern crate serde_derive;
-
 extern crate kg_diag;
 #[macro_use]
 extern crate kg_diag_derive;
 #[macro_use]
 extern crate kg_display_derive;
+#[macro_use]
+extern crate serde_derive;
 
 
 use kg_diag::*;
 use kg_io::*;
 use kg_tree::*;
 use kg_tree::opath::*;
+pub use parse::{Error as ParseError, Parser};
+pub use render::Error as RenderError;
+use segment::Segment;
 
 pub mod parse;
 mod segment;
 mod render;
-
-pub use parse::{Parser, Error as ParseError};
-pub use render::Error as RenderError;
-
-use segment::Segment;
 
 pub struct Template(Segment);
 

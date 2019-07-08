@@ -1,15 +1,13 @@
+use std::collections::VecDeque;
+
 use super::*;
+
+use self::config::*;
+pub use self::config::Config;
+use self::fragment::*;
 
 mod config;
 mod fragment;
-
-use self::config::*;
-use self::fragment::*;
-
-pub use self::config::Config;
-
-use std::collections::VecDeque;
-
 
 #[derive(Debug, Display, Detail)]
 #[diag(code_offset = 400)]
@@ -36,7 +34,7 @@ enum ParseContext {
     Interpolation,
 }
 
-
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Terminal {
     End,
@@ -172,16 +170,6 @@ impl Parser {
         #[inline]
         fn is_id_rest(c: char) -> bool {
             c.is_alphanumeric() || c == '_' || c == '$'
-        }
-
-        #[inline]
-        fn is_label_first(c: char) -> bool {
-            is_id_first(c)
-        }
-
-        #[inline]
-        fn is_label_rest(c: char) -> bool {
-            is_id_rest(c)
         }
 
         #[inline]
@@ -407,7 +395,7 @@ impl Parser {
                             let count = self.config.interpolation_close.len();
                             consume(r, count, Terminal::InterpolationClose)
                         } else {
-                            let p = r.position();
+//                            let p = r.position();
                             Err(parse_diag!(ParseErr::UnexpectedToken)) //FIXME (jc) add error info
                         }
                     }

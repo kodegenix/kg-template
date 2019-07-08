@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[derive(Debug, Clone)]
 pub enum Segment {
     Text(String),
@@ -98,7 +97,7 @@ impl std::fmt::Display for Segment {
                     write_body(f, b)?;
                 }
             }
-            Segment::For { ref key_var, ref value_var, ref expr, ref body_some, ref body_none } => {
+            Segment::For { key_var: _, ref value_var, ref expr, ref body_some, ref body_none } => {
                 write!(f, "for: ${} in {}", value_var, expr)?;
                 if let Some(ref b) = *body_some {
                     write_body(f, b)?;

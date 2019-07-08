@@ -1,17 +1,17 @@
-use super::*;
-
-use std::cell::{RefCell, RefMut};
 use std::borrow::Cow;
+use std::cell::{RefCell, RefMut};
 
-use kg_tree::opath::Opath;
 use kg_display::ListDisplay;
+use kg_tree::opath::Opath;
 
+use super::*;
 
 #[derive(Debug, Clone)]
 pub struct Var {
     name: String,
 }
 
+#[allow(dead_code)]
 impl Var {
     pub fn new(name: Cow<str>) -> Var {
         Var {
@@ -50,7 +50,7 @@ impl std::fmt::Display for Expr {
     }
 }
 
-
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum Element {
     Text {
@@ -225,14 +225,6 @@ pub (super) struct FragmentDisp<'a, 'b: 'a> {
 }
 
 impl<'a, 'b> FragmentDisp<'a, 'b> {
-    pub fn new(f: &'a Fragment, r: &'a RefCell<&'b mut dyn CharReader>) -> FragmentDisp<'a, 'b> {
-        FragmentDisp {
-            level: 0,
-            f,
-            r,
-        }
-    }
-
     fn nested(f: &'a Fragment, r: &'a RefCell<&'b mut dyn CharReader>, level: usize) -> FragmentDisp<'a, 'b> {
         FragmentDisp {
             level,
@@ -304,7 +296,7 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
                         write!(f, "{}", FragmentDisp::nested(b, self.r, self.level + 1))?;
                     }
                 }
-                Element::For { ref key_var, ref value_var, ref expr, ref body_some, ref body_none } => {
+                Element::For { key_var: _, ref value_var, ref expr, ref body_some, ref body_none } => {
                     print_level(f, self.level)?;
                     write!(f, "for: {} in {}", value_var, expr)?;
                     if let Some(ref b) = *body_some {

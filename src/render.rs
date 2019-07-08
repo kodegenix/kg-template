@@ -4,7 +4,6 @@ use std::ops::Deref;
 use super::*;
 use super::segment::*;
 
-
 #[derive(Debug)]
 pub enum Error {
     Undef(u32),
@@ -42,6 +41,7 @@ impl<'a> RenderScope<'a> {
         self.defs.insert(name, def);
     }
 
+    #[allow(dead_code)]
     fn get_def(&self, name: &str) -> Option<&Segment> {
         match self.defs.get(name) {
             Some(def) => Some(def),
@@ -78,7 +78,7 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
                 out.push_str(&n.data().as_string());
             }
         }
-        Segment::Label { ref id, ref body } => {
+        Segment::Label { .. } => {
 
         }
         Segment::Set { ref var, ref expr } => {
@@ -180,10 +180,10 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
                 render_recursive(e, root, current, scope, out)?;
             }
         }
-        Segment::Def { ref name, ref args, ref body } => {
+        Segment::Def { ref name, .. } => {
             scope.set_def(name, s);
         }
-        Segment::Print { ref name, ref args, ref body } => {
+        Segment::Print { .. } => {
 
         }
         Segment::Include{ ref path } => {
@@ -213,7 +213,7 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
 
             let template =  match Parser::new().parse(&mut r) {
                 Ok(t) => t,
-                Err(err) => {
+                Err(_err) => {
                     return Err(Error::Undef(line!())); //FIXME(jc) add error info (cannot parse template file)
                 }
             };
@@ -236,7 +236,6 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[test]
     fn include() {
