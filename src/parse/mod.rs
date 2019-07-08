@@ -145,9 +145,9 @@ impl Parser {
         self.lex_context_stack.pop().unwrap()
     }
 
-    fn lex(&mut self, r: &mut CharReader) -> Result<Token, Error> {
+    fn lex(&mut self, r: &mut dyn CharReader) -> Result<Token, Error> {
         #[inline]
-        fn consume(r: &mut CharReader, count: usize, term: Terminal) -> Result<Token, Error> {
+        fn consume(r: &mut dyn CharReader, count: usize, term: Terminal) -> Result<Token, Error> {
             let p1 = r.position();
             r.skip_chars(count)?;
             let p2 = r.position();
@@ -185,7 +185,7 @@ impl Parser {
         }
 
         #[inline]
-        fn consume_rest(r: &mut CharReader, f: &Fn(char) -> bool, t: Terminal) -> Result<Token, Error> {
+        fn consume_rest(r: &mut dyn CharReader, f: &dyn Fn(char) -> bool, t: Terminal) -> Result<Token, Error> {
             let p1 = r.position();
             r.next_char()?;
             r.skip_while(f)?;
@@ -416,7 +416,7 @@ impl Parser {
         }
     }
 
-    fn next_token(&mut self, r: &mut CharReader) -> Result<Token, Error> {
+    fn next_token(&mut self, r: &mut dyn CharReader) -> Result<Token, Error> {
         let t = if self.token_queue.is_empty() {
             self.lex(r)?
         } else {
@@ -425,7 +425,7 @@ impl Parser {
         Ok(t)
     }
 
-    fn peek_token(&mut self, r: &mut CharReader) -> Result<Token, Error> {
+    fn peek_token(&mut self, r: &mut dyn CharReader) -> Result<Token, Error> {
         let t = if self.token_queue.is_empty() {
             let t = self.lex(r)?;
             self.token_queue.push_front(t.clone());
@@ -440,7 +440,7 @@ impl Parser {
         self.token_queue.push_back(t);
     }
 
-    fn expect_token(&mut self, r: &mut CharReader, term: Terminal) -> Result<Token, Error> {
+    fn expect_token(&mut self, r: &mut dyn CharReader, term: Terminal) -> Result<Token, Error> {
         let t = self.next_token(r)?;
         if t.term == term {
             Ok(t)
@@ -462,7 +462,7 @@ impl Parser {
         self.parse_context_stack.pop().unwrap()
     }
 
-    pub fn parse(&mut self, r: &mut CharReader) -> Result<Template, Error> {
+    pub fn parse(&mut self, r: &mut dyn CharReader) -> Result<Template, Error> {
         self.token_queue.clear();
         self.lex_context_stack.clear();
         self.parse_context_stack.clear();
@@ -487,7 +487,7 @@ impl Parser {
         Ok(t)
     }
 
-    fn parse_element(&mut self, r: &mut CharReader) -> Result<Option<Fragment>, Error> {
+    fn parse_element(&mut self, r: &mut dyn CharReader) -> Result<Option<Fragment>, Error> {
         let t = self.peek_token(r)?;
         match t.term {
             Terminal::End => Ok(None),
@@ -504,7 +504,7 @@ impl Parser {
         }
     }
 
-    fn parse_sequence(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_sequence(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         let from = r.position();
         let mut elems = Vec::new();
         //let mut ws_idx = std::usize::MAX;
@@ -514,7 +514,7 @@ impl Parser {
         Ok(Fragment::new(from, r.position(), Element::Sequence { elems, }))
     }
 
-    fn parse_text(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_text(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Text);
         let t = self.next_token(r)?;
         self.pop_parse_context();
@@ -533,7 +533,7 @@ impl Parser {
         }
     }
 
-    fn parse_directive(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_directive(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         let t = self.next_token(r)?;
         match t.term {
             Terminal::DirectiveFormalOpen => {
@@ -562,7 +562,7 @@ impl Parser {
         Ok(f)
     }
 
-    fn parse_directive_name(&mut self, r: &mut CharReader) -> Result<Token, Error> {
+    fn parse_directive_name(&mut self, r: &mut dyn CharReader) -> Result<Token, Error> {
         let t = self.next_token(r)?;
         match t.term {
             Terminal::KwDef |
@@ -578,7 +578,7 @@ impl Parser {
         }
     }
 
-    fn parse_directive_body(&mut self, r: &mut CharReader, allow_else: bool, allow_elseif: bool) -> Result<DirectiveBody, Error> {
+    fn parse_directive_body(&mut self, r: &mut dyn CharReader, allow_else: bool, allow_elseif: bool) -> Result<DirectiveBody, Error> {
         fn pack_elems(elems: Vec<Fragment>) -> Option<Fragment> {
             if elems.is_empty() {
                 None
@@ -664,7 +664,7 @@ impl Parser {
         Ok(body)
     }
 
-    fn parse_directive_set(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_directive_set(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Expr);
         let var = self.parse_var(r)?;
         self.expect_token(r, Terminal::Assign)?;
@@ -676,7 +676,7 @@ impl Parser {
         }))
     }
 
-    fn parse_directive_if(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_directive_if(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         let expr = self.parse_expr(r)?;
         let body = self.parse_directive_body(r, true, true)?;
         Ok(Fragment::new(Position::new(), r.position(), Element::If {
@@ -686,7 +686,7 @@ impl Parser {
         }))
     }
 
-    fn parse_directive_for(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_directive_for(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Expr);
         let value_var = self.parse_var(r)?;
         self.expect_token(r, Terminal::KwIn)?;
@@ -702,7 +702,7 @@ impl Parser {
         }))
     }
 
-    fn parse_directive_def(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_directive_def(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Expr);
         let tname = self.expect_token(r, Terminal::Id)?;
         let name = r.slice_pos(tname.from, tname.to)?.to_string();
@@ -716,7 +716,7 @@ impl Parser {
         }))
     }
 
-    fn parse_directive_include(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_directive_include(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Expr);
         let expr = self.parse_expr(r)?;
         self.pop_parse_context();
@@ -728,7 +728,7 @@ impl Parser {
 
 
 
-    fn parse_directive_print(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_directive_print(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Expr);
         let tname = self.expect_token(r, Terminal::Id)?;
         let name = r.slice_pos(tname.from, tname.to)?.to_string();
@@ -765,12 +765,12 @@ impl Parser {
         }))
     }
 
-    fn parse_var(&mut self, r: &mut CharReader) -> Result<Var, Error> {
+    fn parse_var(&mut self, r: &mut dyn CharReader) -> Result<Var, Error> {
         let t = self.expect_token(r, Terminal::Var)?;
         Ok(Var::new(r.slice(t.from.offset + 1, t.to.offset)?.into()))
     }
 
-    fn parse_var_list(&mut self, r: &mut CharReader) -> Result<Vec<Var>, Error> {
+    fn parse_var_list(&mut self, r: &mut dyn CharReader) -> Result<Vec<Var>, Error> {
         self.expect_token(r, Terminal::ParenLeft)?;
         let mut vars = Vec::new();
         let mut has_var = false;
@@ -791,7 +791,7 @@ impl Parser {
         Ok(vars)
     }
 
-    fn parse_expr(&mut self, r: &mut CharReader) -> Result<Expr, Error> {
+    fn parse_expr(&mut self, r: &mut dyn CharReader) -> Result<Expr, Error> {
         self.push_parse_context(ParseContext::Expr);
         let e = self.expr_parser.parse(r);
         self.pop_parse_context();
@@ -801,7 +801,7 @@ impl Parser {
         }
     }
 
-    fn parse_interpolation(&mut self, r: &mut CharReader) -> Result<Fragment, Error> {
+    fn parse_interpolation(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Interpolation);
         self.expect_token(r, Terminal::InterpolationOpen)?;
         self.expr_parser.set_multiline(true);

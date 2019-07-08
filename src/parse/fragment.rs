@@ -221,11 +221,11 @@ impl Fragment {
 pub (super) struct FragmentDisp<'a, 'b: 'a> {
     level: usize,
     f: &'a Fragment,
-    r: &'a RefCell<&'b mut CharReader>,
+    r: &'a RefCell<&'b mut dyn CharReader>,
 }
 
 impl<'a, 'b> FragmentDisp<'a, 'b> {
-    pub fn new(f: &'a Fragment, r: &'a RefCell<&'b mut CharReader>) -> FragmentDisp<'a, 'b> {
+    pub fn new(f: &'a Fragment, r: &'a RefCell<&'b mut dyn CharReader>) -> FragmentDisp<'a, 'b> {
         FragmentDisp {
             level: 0,
             f,
@@ -233,7 +233,7 @@ impl<'a, 'b> FragmentDisp<'a, 'b> {
         }
     }
 
-    fn nested(f: &'a Fragment, r: &'a RefCell<&'b mut CharReader>, level: usize) -> FragmentDisp<'a, 'b> {
+    fn nested(f: &'a Fragment, r: &'a RefCell<&'b mut dyn CharReader>, level: usize) -> FragmentDisp<'a, 'b> {
         FragmentDisp {
             level,
             f,
@@ -241,7 +241,7 @@ impl<'a, 'b> FragmentDisp<'a, 'b> {
         }
     }
 
-    fn reader(&self) -> RefMut<&'b mut CharReader> {
+    fn reader(&self) -> RefMut<&'b mut dyn CharReader> {
         self.r.borrow_mut()
     }
 }
@@ -349,8 +349,8 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
 }
 
 
-pub fn build(f: Fragment, r: &mut CharReader) -> Result<Segment, Error> {
-    fn build_opt(b: Option<Box<Fragment>>, r: &mut CharReader) -> Result<Option<Box<Segment>>, Error> {
+pub fn build(f: Fragment, r: &mut dyn CharReader) -> Result<Segment, Error> {
+    fn build_opt(b: Option<Box<Fragment>>, r: &mut dyn CharReader) -> Result<Option<Box<Segment>>, Error> {
         Ok(match b {
             Some(b) => Some(Box::new(build(*b, r)?)),
             None => None,
