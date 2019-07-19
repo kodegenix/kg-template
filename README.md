@@ -2,6 +2,7 @@
 
 [![Latest Version](https://img.shields.io/crates/v/kg-template.svg)](https://crates.io/crates/kg-template)
 [![Documentation](https://docs.rs/kg-template/badge.svg)](https://docs.rs/kg-template)
+[![Build Status](https://travis-ci.com/Kodegenix/kg-template.svg?branch=master)](https://travis-ci.com/Kodegenix/kg-template)
 
 Template engine with syntax based on Apache Velocity, using [https://github.com/Kodegenix/kg-tree](Opath) expression language.
 
