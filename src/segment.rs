@@ -44,7 +44,7 @@ pub enum Segment {
 
 impl std::fmt::Display for Segment {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use kg_display::{PrettyPrinter, ListDisplay};
+        use kg_display::{ListDisplay, PrettyPrinter};
         use std::fmt::Write;
         const PADDING: &str = "    ";
 
@@ -81,13 +81,21 @@ impl std::fmt::Display for Segment {
             Segment::Set { ref var, ref expr } => {
                 write!(f, "set: ${} = {}", var, expr)?;
             }
-            Segment::Def { ref name, ref args, ref body } => {
+            Segment::Def {
+                ref name,
+                ref args,
+                ref body,
+            } => {
                 write!(f, "def: {:?} ({})", name, ListDisplay(args))?;
                 if let Some(ref b) = *body {
                     write_body(f, b)?;
                 }
             }
-            Segment::If { ref expr, ref body_if, ref body_else } => {
+            Segment::If {
+                ref expr,
+                ref body_if,
+                ref body_else,
+            } => {
                 write!(f, "if: {}", expr)?;
                 if let Some(ref b) = *body_if {
                     write_body(f, b)?;
@@ -97,7 +105,13 @@ impl std::fmt::Display for Segment {
                     write_body(f, b)?;
                 }
             }
-            Segment::For { key_var: _, ref value_var, ref expr, ref body_some, ref body_none } => {
+            Segment::For {
+                key_var: _,
+                ref value_var,
+                ref expr,
+                ref body_some,
+                ref body_none,
+            } => {
                 write!(f, "for: ${} in {}", value_var, expr)?;
                 if let Some(ref b) = *body_some {
                     write_body(f, b)?;
@@ -107,7 +121,11 @@ impl std::fmt::Display for Segment {
                     write_body(f, b)?;
                 }
             }
-            Segment::Print { ref name, ref args, ref body } => {
+            Segment::Print {
+                ref name,
+                ref args,
+                ref body,
+            } => {
                 write!(f, "print: {:?} ({})", name, ListDisplay(args))?;
                 if let Some(ref b) = *body {
                     write_body(f, b)?;
@@ -123,7 +141,7 @@ impl std::fmt::Display for Segment {
                 }
                 write!(f, "]")?;
             }
-            Segment::Include { ref path }=>{
+            Segment::Include { ref path } => {
                 write!(f, "include: {}", path)?;
             }
         }

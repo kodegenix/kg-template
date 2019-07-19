@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use super::*;
 use super::segment::*;
+use super::*;
 
 #[derive(Debug)]
 pub enum Error {
     Undef(u32),
 }
-
 
 #[derive(Debug)]
 struct RenderScope<'a> {
@@ -48,7 +47,7 @@ impl<'a> RenderScope<'a> {
             None => match self.parent {
                 Some(p) => p.get_def(name),
                 None => None,
-            }
+            },
         }
     }
 }
@@ -61,13 +60,24 @@ impl<'a> Deref for RenderScope<'a> {
     }
 }
 
-
-pub fn render<'a>(s: &Segment, root: &NodeRef, current: &NodeRef, scope: Option<Scope>, out: &mut String) -> Result<(), Error> {
+pub fn render<'a>(
+    s: &Segment,
+    root: &NodeRef,
+    current: &NodeRef,
+    scope: Option<Scope>,
+    out: &mut String,
+) -> Result<(), Error> {
     let mut scope = RenderScope::root(scope);
     render_recursive(s, root, current, &mut scope, out)
 }
 
-fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope: &mut RenderScope<'a>, out: &mut String) -> Result<(), Error> {
+fn render_recursive<'a>(
+    s: &'a Segment,
+    root: &NodeRef,
+    current: &NodeRef,
+    scope: &mut RenderScope<'a>,
+    out: &mut String,
+) -> Result<(), Error> {
     match *s {
         Segment::Text(ref s) => {
             out.push_str(s);
@@ -78,31 +88,35 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
                 out.push_str(&n.data().as_string());
             }
         }
-        Segment::Label { .. } => {
-
-        }
+        Segment::Label { .. } => {}
         Segment::Set { ref var, ref expr } => {
             let res = expr.apply_ext(root, current, scope.as_ref());
             scope.set_var(var.into(), res);
         }
-        Segment::If { ref expr, ref body_if, ref body_else } => {
+        Segment::If {
+            ref expr,
+            ref body_if,
+            ref body_else,
+        } => {
             let res = expr.apply_ext(root, current, scope.as_ref());
             let e = match res {
                 NodeSet::Empty => false,
                 NodeSet::One(a) => a.as_boolean(),
                 NodeSet::Many(_) => true,
             };
-            let body = if e {
-                body_if
-            } else {
-                body_else
-            };
+            let body = if e { body_if } else { body_else };
             if let Some(ref b) = *body {
                 let mut scope = RenderScope::child(scope);
                 render_recursive(b, root, current, &mut scope, out)?;
             }
         }
-        Segment::For { ref key_var, ref value_var, ref expr, ref body_some, ref body_none } => {
+        Segment::For {
+            ref key_var,
+            ref value_var,
+            ref expr,
+            ref body_some,
+            ref body_none,
+        } => {
             let res = expr.apply_ext(root, current, scope.as_ref());
             match res {
                 NodeSet::Empty => {
@@ -123,7 +137,8 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
                             Value::Array(ref elems) => {
                                 for (i, n) in elems.iter().enumerate() {
                                     *first.data_mut().value_mut() = Value::Boolean(i == 0);
-                                    *last.data_mut().value_mut() = Value::Boolean(i == elems.len() - 1);
+                                    *last.data_mut().value_mut() =
+                                        Value::Boolean(i == elems.len() - 1);
                                     if !key_var.is_empty() {
                                         let index = NodeRef::integer(i as i64);
                                         scope.set_var(key_var.into(), NodeSet::One(index));
@@ -137,9 +152,13 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
                             Value::Object(ref props) => {
                                 for (i, (k, n)) in props.iter().enumerate() {
                                     *first.data_mut().value_mut() = Value::Boolean(i == 0);
-                                    *last.data_mut().value_mut() = Value::Boolean(i == props.len() - 1);
+                                    *last.data_mut().value_mut() =
+                                        Value::Boolean(i == props.len() - 1);
                                     if !key_var.is_empty() {
-                                        scope.set_var(key_var.into(), NodeSet::One(NodeRef::string(k.as_ref())));
+                                        scope.set_var(
+                                            key_var.into(),
+                                            NodeSet::One(NodeRef::string(k.as_ref())),
+                                        );
                                     }
                                     if !value_var.is_empty() {
                                         scope.set_var(value_var.into(), NodeSet::One(n.clone()));
@@ -183,26 +202,24 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
         Segment::Def { ref name, .. } => {
             scope.set_def(name, s);
         }
-        Segment::Print { .. } => {
-
-        }
-        Segment::Include{ ref path } => {
+        Segment::Print { .. } => {}
+        Segment::Include { ref path } => {
             let res = path.apply_ext(root, current, scope.as_ref());
 
-            let path = if let NodeSet::One(path)= res{
+            let path = if let NodeSet::One(path) = res {
                 if path.is_string() {
                     path.into_string()
                 } else {
                     // FIXME add error info string expected
-                    return Err(Error::Undef(line!()))
+                    return Err(Error::Undef(line!()));
                 }
             } else {
                 // FIXME add error info
-                return Err(Error::Undef(line!()))
+                return Err(Error::Undef(line!()));
             };
 
             let template_str = match std::fs::read_to_string(path) {
-                Ok(t)=> t,
+                Ok(t) => t,
                 Err(err) => {
                     eprintln!("err = {:?}", err);
                     return Err(Error::Undef(line!())); //FIXME(jc) add error info (cannot read template file)
@@ -211,7 +228,7 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
 
             let mut r = MemCharReader::new(template_str.as_ref());
 
-            let template =  match Parser::new().parse(&mut r) {
+            let template = match Parser::new().parse(&mut r) {
                 Ok(t) => t,
                 Err(_err) => {
                     return Err(Error::Undef(line!())); //FIXME(jc) add error info (cannot parse template file)
@@ -225,13 +242,11 @@ fn render_recursive<'a>(s: &'a Segment, root: &NodeRef, current: &NodeRef, scope
 
             // TODO add padding
             out.push_str(&include_out);
-
         }
     }
 
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -252,7 +267,6 @@ mod tests {
         let mut t = Template::parse(input.as_bytes()).unwrap();
         println!("{}", t);
 
-
         let n = NodeRef::from_json(ctx).unwrap();
         let scope = ScopeMut::new();
         scope.set_var("type2".into(), NodeSet::One(n.clone()));
@@ -261,7 +275,6 @@ mod tests {
         t.render_ext(&n, &n, scope.as_ref(), &mut out).unwrap();
 
         println!("out:\n---\n{}\n---", out.replace(' ', "\u{b7}"));
-
 
         let expected = r#"
         before include
@@ -277,12 +290,11 @@ line2
         "#;
 
         assert_eq!(expected, &out)
-
     }
 
-     #[test]
-     fn render() {
-         let ctx = r#"{
+    #[test]
+    fn render() {
+        let ctx = r#"{
            "package": "org.example.geom",
            "name": "Point3",
            "fields": [ {
@@ -294,7 +306,7 @@ line2
            } ]
          }"#;
 
-         let input = r#"aaa
+        let input = r#"aaa
          text
          more text
      #set $type = $type2.fields
@@ -307,17 +319,16 @@ line2
          sss
          "#;
 
-         let mut t = Template::parse(input.as_bytes()).unwrap();
-         println!("{}", t);
+        let mut t = Template::parse(input.as_bytes()).unwrap();
+        println!("{}", t);
 
+        let n = NodeRef::from_json(ctx).unwrap();
+        let scope = ScopeMut::new();
+        scope.set_var("type2".into(), NodeSet::One(n.clone()));
 
-         let n = NodeRef::from_json(ctx).unwrap();
-         let scope = ScopeMut::new();
-         scope.set_var("type2".into(), NodeSet::One(n.clone()));
+        let mut out = String::new();
+        t.render_ext(&n, &n, scope.as_ref(), &mut out);
 
-         let mut out = String::new();
-         t.render_ext(&n, &n, scope.as_ref(), &mut out);
-
-         println!("out:\n---\n{}\n---", out.replace(' ', "\u{b7}"));
-     }
+        println!("out:\n---\n{}\n---", out.replace(' ', "\u{b7}"));
+    }
 }

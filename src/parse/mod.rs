@@ -2,8 +2,8 @@ use std::collections::VecDeque;
 
 use super::*;
 
-use self::config::*;
 pub use self::config::Config;
+use self::config::*;
 use self::fragment::*;
 
 mod config;
@@ -18,13 +18,11 @@ pub enum ParseErr {
 
 pub type Error = ParseDiag;
 
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum LexContext {
     Text,
     Stmt(bool),
 }
-
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum ParseContext {
@@ -71,7 +69,6 @@ enum Terminal {
     ParenRight,
 }
 
-
 //FIXME (jc) make common type Token<T: Terminal>
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct Token {
@@ -95,7 +92,6 @@ impl std::fmt::Display for Token {
         write!(f, "({}-{}) {:?}", self.from, self.to, self.term)
     }
 }
-
 
 #[derive(Debug)]
 struct DirectiveBody {
@@ -127,7 +123,7 @@ impl Parser {
     pub fn with_config(config: Config) -> Parser {
         Parser {
             config,
-            .. Parser::new()
+            ..Parser::new()
         }
     }
 
@@ -173,7 +169,11 @@ impl Parser {
         }
 
         #[inline]
-        fn consume_rest(r: &mut dyn CharReader, f: &dyn Fn(char) -> bool, t: Terminal) -> Result<Token, Error> {
+        fn consume_rest(
+            r: &mut dyn CharReader,
+            f: &dyn Fn(char) -> bool,
+            t: Terminal,
+        ) -> Result<Token, Error> {
             let p1 = r.position();
             r.next_char()?;
             r.skip_while(f)?;
@@ -189,10 +189,18 @@ impl Parser {
                     Ok(Token::new(Terminal::End, p1, p1))
                 } else if r.match_str(&self.config.statement_block_open)? {
                     self.push_lex_context(LexContext::Stmt(true));
-                    consume(r, self.config.statement_block_open.len(), Terminal::StmtBlockOpen)
+                    consume(
+                        r,
+                        self.config.statement_block_open.len(),
+                        Terminal::StmtBlockOpen,
+                    )
                 } else if r.match_str(&self.config.statement_line_open)? {
                     self.push_lex_context(LexContext::Stmt(false));
-                    consume(r, self.config.statement_line_open.len(), Terminal::StmtLineOpen)
+                    consume(
+                        r,
+                        self.config.statement_line_open.len(),
+                        Terminal::StmtLineOpen,
+                    )
                 } else {
                     let p1 = r.position();
                     loop {
@@ -201,7 +209,9 @@ impl Parser {
                         } else if r.match_char('\n')? {
                             r.next_char()?;
                             break;
-                        } else if r.match_str(&self.config.statement_block_open)? || r.match_str(&self.config.statement_line_open)? {
+                        } else if r.match_str(&self.config.statement_block_open)?
+                            || r.match_str(&self.config.statement_line_open)?
+                        {
                             break;
                         }
                         r.next_char()?;
@@ -214,7 +224,11 @@ impl Parser {
                     if block {
                         if r.match_str(&self.config.statement_block_close)? {
                             self.pop_lex_context();
-                            return consume(r, self.config.statement_block_close.len(), Terminal::StmtBlockClose);
+                            return consume(
+                                r,
+                                self.config.statement_block_close.len(),
+                                Terminal::StmtBlockClose,
+                            );
                         }
                     } else {
                         if r.eof() {
@@ -249,11 +263,15 @@ impl Parser {
                         loop {
                             if r.eof() {
                                 let p2 = r.position();
-                                return Ok(Token::new(if p1 == p2 {
-                                    Terminal::End
-                                } else {
-                                    Terminal::Text
-                                }, p1, p2));
+                                return Ok(Token::new(
+                                    if p1 == p2 {
+                                        Terminal::End
+                                    } else {
+                                        Terminal::Text
+                                    },
+                                    p1,
+                                    p2,
+                                ));
                             } else if r.match_char('\n')? {
                                 r.next_char()?;
                                 let p2 = r.position();
@@ -262,12 +280,14 @@ impl Parser {
                                 if r.match_str(&self.config.directive_open)?
                                     || r.match_str(&self.config.directive_formal_open)?
                                     || r.match_str(&self.config.block_open)?
-                                    || r.match_str(&self.config.interpolation_open)? {
+                                    || r.match_str(&self.config.interpolation_open)?
+                                {
                                     let p2 = r.position();
                                     return Ok(Token::new(Terminal::Text, p1, p2));
                                 } else if block
                                     && self.config.mode == Mode::Protected
-                                    && r.match_str(&self.config.statement_block_close)? {
+                                    && r.match_str(&self.config.statement_block_close)?
+                                {
                                     let p2 = r.position();
                                     return Ok(Token::new(Terminal::Text, p1, p2));
                                 }
@@ -283,7 +303,11 @@ impl Parser {
                                 r.skip_whitespace_nonl()?;
                             }
                             if r.match_str(&self.config.directive_formal_close)? {
-                                return consume(r, self.config.directive_formal_close.len(), Terminal::DirectiveFormalClose);
+                                return consume(
+                                    r,
+                                    self.config.directive_formal_close.len(),
+                                    Terminal::DirectiveFormalClose,
+                                );
                             }
                         }
                         match r.peek_char(0)? {
@@ -336,12 +360,8 @@ impl Parser {
                                     consume_rest(r, &is_id_rest, Terminal::Id)
                                 }
                             }
-                            Some(c) if is_id_first(c) => {
-                                consume_rest(r, &is_id_rest, Terminal::Id)
-                            }
-                            Some(_) => {
-                                consume(r, 1, Terminal::Unknown)
-                            }
+                            Some(c) if is_id_first(c) => consume_rest(r, &is_id_rest, Terminal::Id),
+                            Some(_) => consume(r, 1, Terminal::Unknown),
                         }
                     }
                     ParseContext::Expr => {
@@ -374,15 +394,11 @@ impl Parser {
                                     consume_rest(r, &is_id_rest, Terminal::Id)
                                 }
                             }
-                            Some(c) if is_id_first(c) => {
-                                consume_rest(r, &is_id_rest, Terminal::Id)
-                            }
+                            Some(c) if is_id_first(c) => consume_rest(r, &is_id_rest, Terminal::Id),
                             Some(c) if is_var_first(c) => {
                                 consume_rest(r, &is_var_rest, Terminal::Var)
                             }
-                            Some(_) => {
-                                consume(r, 1, Terminal::Unknown)
-                            }
+                            Some(_) => consume(r, 1, Terminal::Unknown),
                         }
                     }
                     ParseContext::Interpolation => {
@@ -395,7 +411,7 @@ impl Parser {
                             let count = self.config.interpolation_close.len();
                             consume(r, count, Terminal::InterpolationClose)
                         } else {
-//                            let p = r.position();
+                            //                            let p = r.position();
                             Err(parse_diag!(ParseErr::UnexpectedToken)) //FIXME (jc) add error info
                         }
                     }
@@ -436,7 +452,6 @@ impl Parser {
             Err(parse_diag!(ParseErr::UnexpectedToken)) //FIXME (jc) add error info
         }
     }
-
 
     fn parse_context(&self) -> ParseContext {
         *self.parse_context_stack.last().unwrap()
@@ -479,12 +494,14 @@ impl Parser {
         let t = self.peek_token(r)?;
         match t.term {
             Terminal::End => Ok(None),
-            Terminal::Text |
-            Terminal::StmtBlockOpen |
-            Terminal::StmtBlockClose |
-            Terminal::StmtLineOpen |
-            Terminal::StmtLineClose => Ok(Some(self.parse_text(r)?)),
-            Terminal::DirectiveOpen | Terminal::DirectiveFormalOpen => Ok(Some(self.parse_directive(r)?)),
+            Terminal::Text
+            | Terminal::StmtBlockOpen
+            | Terminal::StmtBlockClose
+            | Terminal::StmtLineOpen
+            | Terminal::StmtLineClose => Ok(Some(self.parse_text(r)?)),
+            Terminal::DirectiveOpen | Terminal::DirectiveFormalOpen => {
+                Ok(Some(self.parse_directive(r)?))
+            }
             Terminal::InterpolationOpen => Ok(Some(self.parse_interpolation(r)?)),
             _ => {
                 Err(parse_diag!(ParseErr::UnexpectedToken)) //FIXME (jc) add error info
@@ -499,7 +516,11 @@ impl Parser {
         while let Some(e) = self.parse_element(r)? {
             elems.push(e);
         }
-        Ok(Fragment::new(from, r.position(), Element::Sequence { elems, }))
+        Ok(Fragment::new(
+            from,
+            r.position(),
+            Element::Sequence { elems },
+        ))
     }
 
     fn parse_text(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
@@ -507,11 +528,11 @@ impl Parser {
         let t = self.next_token(r)?;
         self.pop_parse_context();
         match t.term {
-            Terminal::Text |
-            Terminal::StmtBlockOpen |
-            Terminal::StmtBlockClose |
-            Terminal::StmtLineOpen |
-            Terminal::StmtLineClose => {
+            Terminal::Text
+            | Terminal::StmtBlockOpen
+            | Terminal::StmtBlockClose
+            | Terminal::StmtLineOpen
+            | Terminal::StmtLineClose => {
                 let s = r.slice_pos(t.from, t.to)?;
                 let ws = s.trim().is_empty();
                 let nl = s.contains('\n');
@@ -553,20 +574,25 @@ impl Parser {
     fn parse_directive_name(&mut self, r: &mut dyn CharReader) -> Result<Token, Error> {
         let t = self.next_token(r)?;
         match t.term {
-            Terminal::KwDef |
-            Terminal::KwEnd |
-            Terminal::KwElse |
-            Terminal::KwElseif |
-            Terminal::KwFor |
-            Terminal::KwIf |
-            Terminal::KwPrint |
-            Terminal::KwInclude |
-            Terminal::KwSet => Ok(t),
+            Terminal::KwDef
+            | Terminal::KwEnd
+            | Terminal::KwElse
+            | Terminal::KwElseif
+            | Terminal::KwFor
+            | Terminal::KwIf
+            | Terminal::KwPrint
+            | Terminal::KwInclude
+            | Terminal::KwSet => Ok(t),
             _ => Err(parse_diag!(ParseErr::UnexpectedToken)), //FIXME(jc) add error info
         }
     }
 
-    fn parse_directive_body(&mut self, r: &mut dyn CharReader, allow_else: bool, allow_elseif: bool) -> Result<DirectiveBody, Error> {
+    fn parse_directive_body(
+        &mut self,
+        r: &mut dyn CharReader,
+        allow_else: bool,
+        allow_elseif: bool,
+    ) -> Result<DirectiveBody, Error> {
         fn pack_elems(elems: Vec<Fragment>) -> Option<Fragment> {
             if elems.is_empty() {
                 None
@@ -658,20 +684,25 @@ impl Parser {
         self.expect_token(r, Terminal::Assign)?;
         self.pop_parse_context();
         let expr = self.parse_expr(r)?;
-        Ok(Fragment::new(Position::new(), r.position(), Element::Set {
-            var,
-            expr,
-        }))
+        Ok(Fragment::new(
+            Position::new(),
+            r.position(),
+            Element::Set { var, expr },
+        ))
     }
 
     fn parse_directive_if(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         let expr = self.parse_expr(r)?;
         let body = self.parse_directive_body(r, true, true)?;
-        Ok(Fragment::new(Position::new(), r.position(), Element::If {
-            expr,
-            body_if: body.arm1.map(|b| Box::new(b)),
-            body_else: body.arm2.map(|b| Box::new(b)),
-        }))
+        Ok(Fragment::new(
+            Position::new(),
+            r.position(),
+            Element::If {
+                expr,
+                body_if: body.arm1.map(|b| Box::new(b)),
+                body_else: body.arm2.map(|b| Box::new(b)),
+            },
+        ))
     }
 
     fn parse_directive_for(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
@@ -681,13 +712,17 @@ impl Parser {
         self.pop_parse_context();
         let expr = self.parse_expr(r)?;
         let body = self.parse_directive_body(r, true, false)?;
-        Ok(Fragment::new(Position::new(), r.position(), Element::For {
-            key_var: Var::new("".into()),
-            value_var,
-            expr,
-            body_some: body.arm1.map(|b| Box::new(b)),
-            body_none: body.arm2.map(|b| Box::new(b)),
-        }))
+        Ok(Fragment::new(
+            Position::new(),
+            r.position(),
+            Element::For {
+                key_var: Var::new("".into()),
+                value_var,
+                expr,
+                body_some: body.arm1.map(|b| Box::new(b)),
+                body_none: body.arm2.map(|b| Box::new(b)),
+            },
+        ))
     }
 
     fn parse_directive_def(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
@@ -697,24 +732,26 @@ impl Parser {
         let args = self.parse_var_list(r)?;
         self.pop_parse_context();
         let body = self.parse_directive_body(r, false, false)?.arm1;
-        Ok(Fragment::new(Position::new(), r.position(), Element::Def {
-            name,
-            args,
-            body: body.map(|b| Box::new(b)),
-        }))
+        Ok(Fragment::new(
+            Position::new(),
+            r.position(),
+            Element::Def {
+                name,
+                args,
+                body: body.map(|b| Box::new(b)),
+            },
+        ))
     }
 
     fn parse_directive_include(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Expr);
         let expr = self.parse_expr(r)?;
         self.pop_parse_context();
-        
+
         let fr = Fragment::new(Position::new(), r.position(), Element::Include(expr));
 
         Ok(fr)
     }
-
-
 
     fn parse_directive_print(&mut self, r: &mut dyn CharReader) -> Result<Fragment, Error> {
         self.push_parse_context(ParseContext::Expr);
@@ -746,11 +783,15 @@ impl Parser {
         }
         self.pop_parse_context();
         let body = self.parse_directive_body(r, false, false)?;
-        Ok(Fragment::new(Position::new(), r.position(), Element::Print {
-            name,
-            args,
-            body: body.arm1.map(|b| Box::new(b)),
-        }))
+        Ok(Fragment::new(
+            Position::new(),
+            r.position(),
+            Element::Print {
+                name,
+                args,
+                body: body.arm1.map(|b| Box::new(b)),
+            },
+        ))
     }
 
     fn parse_var(&mut self, r: &mut dyn CharReader) -> Result<Var, Error> {
@@ -797,9 +838,12 @@ impl Parser {
         self.expect_token(r, Terminal::InterpolationClose)?;
         self.pop_parse_context();
         match e {
-            Ok(expr) => Ok(Fragment::new(Position::new(), r.position(), Element::Expr { expr, })),
+            Ok(expr) => Ok(Fragment::new(
+                Position::new(),
+                r.position(),
+                Element::Expr { expr },
+            )),
             Err(err) => Err(err),
         }
     }
 }
-
