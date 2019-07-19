@@ -3,10 +3,37 @@ use std::ops::Deref;
 
 use super::segment::*;
 use super::*;
+use crate::render::TemplateErrorDetail::{
+    ExprErr, IncludeSingleValueExpected, IncludeStringExpected, IoErr, ParseErr,
+};
 
-#[derive(Debug)]
-pub enum Error {
-    Undef(u32),
+pub type TemplateError = BasicDiag;
+
+pub type TemplateResult<T> = Result<T, TemplateError>;
+
+#[derive(Debug, Display, Detail)]
+#[diag(code_offset = 800)]
+pub enum TemplateErrorDetail {
+    #[display(fmt = "string expected, got '{kind}'")]
+    IncludeStringExpected { kind: Kind },
+
+    #[display(fmt = "single value expected")]
+    IncludeSingleValueExpected,
+
+    #[display(
+        fmt = "cannot evaluate expression: '{detail}'",
+        detail = "err.detail()"
+    )]
+    ExprErr { err: Box<dyn Diag> },
+
+    #[display(fmt = "cannot read template file: '{detail}'", detail = "err.detail()")]
+    IoErr { err: Box<dyn Diag> },
+
+    #[display(
+        fmt = "cannot parse template file: '{detail}'",
+        detail = "err.detail()"
+    )]
+    ParseErr { err: Box<dyn Diag> },
 }
 
 #[derive(Debug)]
@@ -66,7 +93,7 @@ pub fn render<'a>(
     current: &NodeRef,
     scope: Option<Scope>,
     out: &mut String,
-) -> Result<(), Error> {
+) -> TemplateResult<()> {
     let mut scope = RenderScope::root(scope);
     render_recursive(s, root, current, &mut scope, out)
 }
@@ -77,20 +104,24 @@ fn render_recursive<'a>(
     current: &NodeRef,
     scope: &mut RenderScope<'a>,
     out: &mut String,
-) -> Result<(), Error> {
+) -> TemplateResult<()> {
     match *s {
         Segment::Text(ref s) => {
             out.push_str(s);
         }
         Segment::Expr(ref expr) => {
-            let res = expr.apply_ext(root, current, scope.as_ref());
+            let res = expr
+                .apply_ext(root, current, scope.as_ref())
+                .map_err(|err| ExprErr { err: Box::new(err) })?;
             for n in res {
                 out.push_str(&n.data().as_string());
             }
         }
         Segment::Label { .. } => {}
         Segment::Set { ref var, ref expr } => {
-            let res = expr.apply_ext(root, current, scope.as_ref());
+            let res = expr
+                .apply_ext(root, current, scope.as_ref())
+                .map_err(|err| ExprErr { err: Box::new(err) })?;
             scope.set_var(var.into(), res);
         }
         Segment::If {
@@ -98,7 +129,9 @@ fn render_recursive<'a>(
             ref body_if,
             ref body_else,
         } => {
-            let res = expr.apply_ext(root, current, scope.as_ref());
+            let res = expr
+                .apply_ext(root, current, scope.as_ref())
+                .map_err(|err| ExprErr { err: Box::new(err) })?;
             let e = match res {
                 NodeSet::Empty => false,
                 NodeSet::One(a) => a.as_boolean(),
@@ -117,7 +150,9 @@ fn render_recursive<'a>(
             ref body_some,
             ref body_none,
         } => {
-            let res = expr.apply_ext(root, current, scope.as_ref());
+            let res = expr
+                .apply_ext(root, current, scope.as_ref())
+                .map_err(|err| ExprErr { err: Box::new(err) })?;
             match res {
                 NodeSet::Empty => {
                     if let Some(ref b) = *body_none {
@@ -204,25 +239,28 @@ fn render_recursive<'a>(
         }
         Segment::Print { .. } => {}
         Segment::Include { ref path } => {
-            let res = path.apply_ext(root, current, scope.as_ref());
+            let res = path
+                .apply_ext(root, current, scope.as_ref())
+                .map_err(|err| ExprErr { err: Box::new(err) })?;
 
             let path = if let NodeSet::One(path) = res {
                 if path.is_string() {
                     path.into_string()
                 } else {
-                    // FIXME add error info string expected
-                    return Err(Error::Undef(line!()));
+                    return Err(IncludeStringExpected {
+                        kind: path.data().kind(),
+                    }
+                    .into());
                 }
             } else {
                 // FIXME add error info
-                return Err(Error::Undef(line!()));
+                return Err(IncludeSingleValueExpected.into());
             };
 
-            let template_str = match std::fs::read_to_string(path) {
+            let template_str = match fs::read_string(path) {
                 Ok(t) => t,
                 Err(err) => {
-                    eprintln!("err = {:?}", err);
-                    return Err(Error::Undef(line!())); //FIXME(jc) add error info (cannot read template file)
+                    return Err(IoErr { err: Box::new(err) }.into());
                 }
             };
 
@@ -230,8 +268,8 @@ fn render_recursive<'a>(
 
             let template = match Parser::new().parse(&mut r) {
                 Ok(t) => t,
-                Err(_err) => {
-                    return Err(Error::Undef(line!())); //FIXME(jc) add error info (cannot parse template file)
+                Err(err) => {
+                    return Err(ParseErr { err: Box::new(err) }.into());
                 }
             };
 
