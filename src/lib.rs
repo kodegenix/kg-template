@@ -1,6 +1,5 @@
 #![feature(specialization)]
 
-extern crate kg_diag;
 #[macro_use]
 extern crate kg_diag_derive;
 #[macro_use]
@@ -10,6 +9,7 @@ extern crate serde_derive;
 
 use crate::render::TemplateResult;
 use kg_diag::*;
+use kg_tree::*;
 use kg_io::*;
 use kg_tree::opath::*;
 use kg_tree::*;
