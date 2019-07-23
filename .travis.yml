@@ -1,4 +1,29 @@
 language: rust
 rust:
   - nightly
+
 cache: cargo
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+      - cmake
+    sources:
+      - kalakris-cmake
+
+before_script:
+  - cargo install --force cargo-travis
+  - export PATH=$HOME/.cargo/bin:$PATH
+
+script:
+  - cargo build
+  - cargo test
+
+after_success:
+  - cargo coveralls
