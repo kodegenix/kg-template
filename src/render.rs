@@ -257,7 +257,7 @@ fn render_recursive<'a>(
                 return Err(IncludeSingleValueExpected.into());
             };
 
-            let template_str = match fs::read_string(path).into_diag() {
+            let template_str = match kg_diag::io::fs::read_string(path).into_diag() {
                 Ok(t) => t,
                 Err(err) => {
                     return Err(IoErr { err: Box::new(err) }.into());
