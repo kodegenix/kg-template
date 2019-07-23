@@ -7,17 +7,16 @@ extern crate kg_display_derive;
 #[macro_use]
 extern crate serde_derive;
 
-
+use crate::render::TemplateResult;
 use kg_diag::*;
 use kg_tree::*;
 use kg_tree::opath::*;
 pub use parse::{Error as ParseError, Parser};
-pub use render::Error as RenderError;
 use segment::Segment;
 
 pub mod parse;
-mod segment;
 mod render;
+mod segment;
 
 pub struct Template(Segment);
 
@@ -27,11 +26,22 @@ impl Template {
         Parser::new().parse(&mut r)
     }
 
-    pub fn render(&self, root: &NodeRef, current: &NodeRef, out: &mut String) -> Result<(), RenderError> {
+    pub fn render(
+        &self,
+        root: &NodeRef,
+        current: &NodeRef,
+        out: &mut String,
+    ) -> TemplateResult<()> {
         self::render::render(&self.0, root, current, None, out)
     }
 
-    pub fn render_ext(&self, root: &NodeRef, current: &NodeRef, scope: &Scope, out: &mut String) -> Result<(), RenderError> {
+    pub fn render_ext(
+        &self,
+        root: &NodeRef,
+        current: &NodeRef,
+        scope: &Scope,
+        out: &mut String,
+    ) -> TemplateResult<()> {
         self::render::render(&self.0, root, current, Some(scope.clone()), out)
     }
 }
