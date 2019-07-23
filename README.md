@@ -5,7 +5,7 @@
 [![Build Status](https://travis-ci.org/Kodegenix/kg-template.svg?branch=master)](https://travis-ci.org/Kodegenix/kg-template)
 [![Coverage Status](https://coveralls.io/repos/github/Kodegenix/kg-template/badge.svg?branch=master)](https://coveralls.io/github/Kodegenix/kg-template?branch=master)
 
-Template engine with syntax based on Apache Velocity, using [https://github.com/Kodegenix/kg-tree](Opath) expression language.
+Template engine with syntax based on Apache Velocity, using [Opath](https://github.com/Kodegenix/kg-tree/blob/master/README.md) expression language.
 
 ## License
 
@@ -15,7 +15,7 @@ Licensed under either of
 
 at your option.
 
-### Contribution
+## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any
