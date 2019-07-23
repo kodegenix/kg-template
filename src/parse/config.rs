@@ -49,8 +49,10 @@ struct ConfigDef<'a>(&'a mut Config);
 impl<'a, 'de> de::DeserializeSeed<'de> for ConfigDef<'a> {
     type Value = ();
 
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error> where
-        D: de::Deserializer<'de> {
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
         const FIELDS: &'static [&'static str] = &[
             "mode",
             "statement_line_open",
@@ -79,8 +81,10 @@ impl<'a, 'de> de::Visitor<'de> for ConfigDefVisitor<'a> {
         write!(formatter, "struct Config")
     }
 
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where
-        A: de::MapAccess<'de>, {
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::MapAccess<'de>,
+    {
         let c = (self.0).0;
         while let Some(k) = map.next_key()? {
             match k {
@@ -103,7 +107,6 @@ impl<'a, 'de> de::Visitor<'de> for ConfigDefVisitor<'a> {
         Ok(())
     }
 }
-
 
 #[cfg(test)]
 mod tests {

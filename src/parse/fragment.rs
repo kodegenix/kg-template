@@ -30,7 +30,6 @@ impl std::fmt::Display for Var {
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct Expr {
     expr: Opath,
@@ -38,9 +37,7 @@ pub struct Expr {
 
 impl Expr {
     pub fn new(expr: Opath) -> Expr {
-        Expr {
-            expr,
-        }
+        Expr { expr }
     }
 }
 
@@ -99,16 +96,15 @@ pub enum Element {
 impl Element {
     pub fn is_directive(&self) -> bool {
         match *self {
-            Element::Set { .. } |
-            Element::If { .. } |
-            Element::For { .. } |
-            Element::Def { .. } |
-            Element::Print { .. } => true,
+            Element::Set { .. }
+            | Element::If { .. }
+            | Element::For { .. }
+            | Element::Def { .. }
+            | Element::Print { .. } => true,
             _ => false,
         }
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Fragment {
@@ -119,11 +115,7 @@ pub struct Fragment {
 
 impl Fragment {
     pub fn new(from: Position, to: Position, elem: Element) -> Fragment {
-        Fragment {
-            from,
-            to,
-            elem,
-        }
+        Fragment { from, to, elem }
     }
 
     pub fn from(&self) -> Position {
@@ -183,7 +175,11 @@ impl Fragment {
                         prune(e, false);
                     }
                 }
-                Element::If { ref mut body_if, ref mut body_else, .. } => {
+                Element::If {
+                    ref mut body_if,
+                    ref mut body_else,
+                    ..
+                } => {
                     if let Some(ref mut b) = *body_if {
                         prune(b, true);
                     }
@@ -191,7 +187,11 @@ impl Fragment {
                         prune(b, true);
                     }
                 }
-                Element::For { ref mut body_some, ref mut body_none, .. } => {
+                Element::For {
+                    ref mut body_some,
+                    ref mut body_none,
+                    ..
+                } => {
                     if let Some(ref mut b) = *body_some {
                         prune(b, true);
                     }
@@ -217,20 +217,19 @@ impl Fragment {
     }
 }
 
-
-pub (super) struct FragmentDisp<'a, 'b: 'a> {
+pub(super) struct FragmentDisp<'a, 'b: 'a> {
     level: usize,
     f: &'a Fragment,
     r: &'a RefCell<&'b mut dyn CharReader>,
 }
 
 impl<'a, 'b> FragmentDisp<'a, 'b> {
-    fn nested(f: &'a Fragment, r: &'a RefCell<&'b mut dyn CharReader>, level: usize) -> FragmentDisp<'a, 'b> {
-        FragmentDisp {
-            level,
-            f,
-            r,
-        }
+    fn nested(
+        f: &'a Fragment,
+        r: &'a RefCell<&'b mut dyn CharReader>,
+        level: usize,
+    ) -> FragmentDisp<'a, 'b> {
+        FragmentDisp { level, f, r }
     }
 
     fn reader(&self) -> RefMut<&'b mut dyn CharReader> {
@@ -241,7 +240,11 @@ impl<'a, 'b> FragmentDisp<'a, 'b> {
 impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if f.alternate() {
-            write!(f, "{}", self.reader().slice_pos(self.f.from, self.f.to).unwrap())?;
+            write!(
+                f,
+                "{}",
+                self.reader().slice_pos(self.f.from, self.f.to).unwrap()
+            )?;
         } else {
             fn print_level(f: &mut std::fmt::Formatter, level: usize) -> std::fmt::Result {
                 if level > 0 {
@@ -256,10 +259,20 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
             match self.f.elem {
                 Element::Text { ws, nl } => {
                     fn flag(f: bool) -> char {
-                        if f { '+' } else { '-' }
+                        if f {
+                            '+'
+                        } else {
+                            '-'
+                        }
                     }
                     print_level(f, self.level)?;
-                    write!(f, "text: (ws:{}, nl:{}) {:?}", flag(ws), flag(nl), self.reader().slice_pos(self.f.from, self.f.to).unwrap())?;
+                    write!(
+                        f,
+                        "text: (ws:{}, nl:{}) {:?}",
+                        flag(ws),
+                        flag(nl),
+                        self.reader().slice_pos(self.f.from, self.f.to).unwrap()
+                    )?;
                 }
                 Element::Label { ref id, ref body } => {
                     print_level(f, self.level)?;
@@ -277,14 +290,22 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
                     print_level(f, self.level)?;
                     write!(f, "set: {} = {}", var, expr)?;
                 }
-                Element::Def { ref name, ref args, ref body } => {
+                Element::Def {
+                    ref name,
+                    ref args,
+                    ref body,
+                } => {
                     print_level(f, self.level)?;
                     write!(f, "def: {:?} ({})", name, ListDisplay(args))?;
                     if let Some(ref b) = *body {
                         write!(f, "{}", FragmentDisp::nested(b, self.r, self.level + 1))?;
                     }
                 }
-                Element::If { ref expr, ref body_if, ref body_else } => {
+                Element::If {
+                    ref expr,
+                    ref body_if,
+                    ref body_else,
+                } => {
                     print_level(f, self.level)?;
                     write!(f, "if: {}", expr)?;
                     if let Some(ref b) = *body_if {
@@ -296,7 +317,13 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
                         write!(f, "{}", FragmentDisp::nested(b, self.r, self.level + 1))?;
                     }
                 }
-                Element::For { key_var: _, ref value_var, ref expr, ref body_some, ref body_none } => {
+                Element::For {
+                    key_var: _,
+                    ref value_var,
+                    ref expr,
+                    ref body_some,
+                    ref body_none,
+                } => {
                     print_level(f, self.level)?;
                     write!(f, "for: {} in {}", value_var, expr)?;
                     if let Some(ref b) = *body_some {
@@ -308,7 +335,11 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
                         write!(f, "{}", FragmentDisp::nested(b, self.r, self.level + 1))?;
                     }
                 }
-                Element::Print { ref name, ref args, ref body } => {
+                Element::Print {
+                    ref name,
+                    ref args,
+                    ref body,
+                } => {
                     print_level(f, self.level)?;
                     write!(f, "print: {:?} ({})", name, ListDisplay(args))?;
                     if let Some(ref b) = *body {
@@ -331,7 +362,7 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
                     }
                     write!(f, "}}")?;
                 }
-                Element::Include(ref segment)=>{
+                Element::Include(ref segment) => {
                     write!(f, "{:?}", segment)?;
                 }
             }
@@ -340,9 +371,11 @@ impl<'a, 'b> std::fmt::Display for FragmentDisp<'a, 'b> {
     }
 }
 
-
 pub fn build(f: Fragment, r: &mut dyn CharReader) -> Result<Segment, Error> {
-    fn build_opt(b: Option<Box<Fragment>>, r: &mut dyn CharReader) -> Result<Option<Box<Segment>>, Error> {
+    fn build_opt(
+        b: Option<Box<Fragment>>,
+        r: &mut dyn CharReader,
+    ) -> Result<Option<Box<Segment>>, Error> {
         Ok(match b {
             Some(b) => Some(Box::new(build(*b, r)?)),
             None => None,
@@ -350,18 +383,12 @@ pub fn build(f: Fragment, r: &mut dyn CharReader) -> Result<Segment, Error> {
     }
 
     Ok(match f.elem {
-        Element::Text { .. } => {
-            Segment::Text(r.slice_pos(f.from, f.to)?.to_string())
-        }
-        Element::Label { id, body } => {
-            Segment::Label {
-                id,
-                body: build_opt(body, r)?,
-            }
-        }
-        Element::Expr { expr } => {
-            Segment::Expr(expr.expr)
-        }
+        Element::Text { .. } => Segment::Text(r.slice_pos(f.from, f.to)?.to_string()),
+        Element::Label { id, body } => Segment::Label {
+            id,
+            body: build_opt(body, r)?,
+        },
+        Element::Expr { expr } => Segment::Expr(expr.expr),
         Element::Sequence { elems } => {
             let mut nelems = Vec::with_capacity(elems.len());
             let mut iter = elems.into_iter().peekable();
@@ -390,48 +417,45 @@ pub fn build(f: Fragment, r: &mut dyn CharReader) -> Result<Segment, Error> {
             if nelems.len() == 1 {
                 nelems.pop().unwrap()
             } else {
-                Segment::Sequence {
-                    elems: nelems
-                }
+                Segment::Sequence { elems: nelems }
             }
         }
-        Element::Set { var, expr } => {
-            Segment::Set {
-                var: var.name,
-                expr: expr.expr,
-            }
-        }
-        Element::If { expr, body_if, body_else } => {
-            Segment::If {
-                expr: expr.expr,
-                body_if: build_opt(body_if, r)?,
-                body_else: build_opt(body_else, r)?,
-            }
-        }
-        Element::For { key_var, value_var, expr, body_some, body_none } => {
-            Segment::For {
-                key_var: key_var.name,
-                value_var: value_var.name,
-                expr: expr.expr,
-                body_some: build_opt(body_some, r)?,
-                body_none: build_opt(body_none, r)?,
-            }
-        }
-        Element::Def { name, args, body } => {
-            Segment::Def {
-                name,
-                args: args.into_iter().map(|a| a.name).collect(),
-                body: build_opt(body, r)?,
-            }
-        }
-        Element::Print { name, args, body } => {
-            Segment::Print {
-                name,
-                args: args.into_iter().map(|a| a.expr).collect(),
-                body: build_opt(body, r)?,
-            }
-        }
-        Element::Include(path) => Segment::Include {path: path.expr}
+        Element::Set { var, expr } => Segment::Set {
+            var: var.name,
+            expr: expr.expr,
+        },
+        Element::If {
+            expr,
+            body_if,
+            body_else,
+        } => Segment::If {
+            expr: expr.expr,
+            body_if: build_opt(body_if, r)?,
+            body_else: build_opt(body_else, r)?,
+        },
+        Element::For {
+            key_var,
+            value_var,
+            expr,
+            body_some,
+            body_none,
+        } => Segment::For {
+            key_var: key_var.name,
+            value_var: value_var.name,
+            expr: expr.expr,
+            body_some: build_opt(body_some, r)?,
+            body_none: build_opt(body_none, r)?,
+        },
+        Element::Def { name, args, body } => Segment::Def {
+            name,
+            args: args.into_iter().map(|a| a.name).collect(),
+            body: build_opt(body, r)?,
+        },
+        Element::Print { name, args, body } => Segment::Print {
+            name,
+            args: args.into_iter().map(|a| a.expr).collect(),
+            body: build_opt(body, r)?,
+        },
+        Element::Include(path) => Segment::Include { path: path.expr },
     })
 }
-
