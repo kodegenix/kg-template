@@ -7,6 +7,17 @@
 
 Template engine with syntax based on Apache Velocity, using [Opath](https://github.com/Kodegenix/kg-tree/blob/master/README.md) expression language.
 
+## Builds statuses for Rust channels
+
+| stable            | beta              | nightly           |
+|-------------------|-------------------|-------------------|
+| [![Build1][3]][4] | [![Build2][2]][4] | [![Build3][1]][4] |
+
+[1]: https://travis-matrix-badges.herokuapp.com/repos/kodegenix/kg-template/branches/master/1
+[2]: https://travis-matrix-badges.herokuapp.com/repos/kodegenix/kg-template/branches/master/2
+[3]: https://travis-matrix-badges.herokuapp.com/repos/kodegenix/kg-template/branches/master/3
+[4]: https://travis-ci.org/kodegenix/kg-template
+
 ## License
 
 Licensed under either of
