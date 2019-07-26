@@ -1,8 +1,15 @@
 language: rust
 rust:
   - nightly
+  - beta
+  - stable
 
 cache: cargo
+
+matrix:
+  allow_failures:
+    - rust: beta
+    - rust: stable
 
 sudo: false
 
