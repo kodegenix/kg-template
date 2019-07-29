@@ -3,7 +3,7 @@
 [![Latest Version](https://img.shields.io/crates/v/kg-template.svg)](https://crates.io/crates/kg-template)
 [![Documentation](https://docs.rs/kg-template/badge.svg)](https://docs.rs/kg-template)
 [![Build Status](https://travis-ci.org/Kodegenix/kg-template.svg?branch=master)](https://travis-ci.org/Kodegenix/kg-template)
-[![Coverage Status](https://coveralls.io/repos/github/Kodegenix/kg-template/badge.svg?branch=master)](https://coveralls.io/github/Kodegenix/kg-template?branch=master)
+[![codecov](https://codecov.io/gh/kodegenix/kg-template/branch/master/graph/badge.svg)](https://codecov.io/gh/kodegenix/kg-template)
 
 Template engine with syntax based on Apache Velocity, using [Opath](https://github.com/Kodegenix/kg-tree/blob/master/README.md) expression language.
 
