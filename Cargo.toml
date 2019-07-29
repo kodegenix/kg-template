@@ -13,12 +13,12 @@ edition = "2018"
 [workspace]
 
 [dependencies]
-kg-diag = "0.2.1"
-kg-diag-derive = "0.2.1"
+kg-diag = "0.2.3"
+kg-diag-derive = "0.2.3"
 kg-display = "0.1.2"
 kg-display-derive = "0.1.1"
 kg-tree = "0.1.4"
 kg-utils = "0.3.0"
-serde = "1.0.97"
-serde_derive = "1.0.97"
+serde = "1.0.98"
+serde_derive = "1.0.98"
 toml = "0.5.1"
