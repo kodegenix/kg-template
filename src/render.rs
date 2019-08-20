@@ -20,20 +20,14 @@ pub enum TemplateErrorDetail {
     #[display(fmt = "single value expected")]
     IncludeSingleValueExpected,
 
-    #[display(
-        fmt = "cannot evaluate expression: '{detail}'",
-        detail = "err.detail()"
-    )]
-    ExprErr { err: Box<dyn Diag> },
+    #[display( fmt = "cannot evaluate expression")]
+    ExprErr,
 
-    #[display(fmt = "cannot read template file: '{detail}'", detail = "err.detail()")]
-    IoErr { err: Box<dyn Diag> },
+    #[display(fmt = "cannot read template file")]
+    IoErr,
 
-    #[display(
-        fmt = "cannot parse template file: '{detail}'",
-        detail = "err.detail()"
-    )]
-    ParseErr { err: Box<dyn Diag> },
+    #[display(fmt = "cannot parse template file")]
+    ParseErr,
 }
 
 #[derive(Debug)]
@@ -112,7 +106,7 @@ fn render_recursive<'a>(
         Segment::Expr(ref expr) => {
             let res = expr
                 .apply_ext(root, current, scope.as_ref())
-                .map_err(|err| ExprErr { err: Box::new(err) })?;
+                .map_err_as_cause(|| ExprErr)?;
             for n in res {
                 out.push_str(&n.data().as_string());
             }
@@ -121,7 +115,7 @@ fn render_recursive<'a>(
         Segment::Set { ref var, ref expr } => {
             let res = expr
                 .apply_ext(root, current, scope.as_ref())
-                .map_err(|err| ExprErr { err: Box::new(err) })?;
+                .map_err_as_cause(|| ExprErr)?;
             scope.set_var(var.into(), res);
         }
         Segment::If {
@@ -131,7 +125,7 @@ fn render_recursive<'a>(
         } => {
             let res = expr
                 .apply_ext(root, current, scope.as_ref())
-                .map_err(|err| ExprErr { err: Box::new(err) })?;
+                .map_err_as_cause(|| ExprErr)?;
             let e = match res {
                 NodeSet::Empty => false,
                 NodeSet::One(a) => a.as_boolean(),
@@ -152,7 +146,7 @@ fn render_recursive<'a>(
         } => {
             let res = expr
                 .apply_ext(root, current, scope.as_ref())
-                .map_err(|err| ExprErr { err: Box::new(err) })?;
+                .map_err_as_cause(|| ExprErr)?;
             match res {
                 NodeSet::Empty => {
                     if let Some(ref b) = *body_none {
@@ -241,7 +235,7 @@ fn render_recursive<'a>(
         Segment::Include { ref path } => {
             let res = path
                 .apply_ext(root, current, scope.as_ref())
-                .map_err(|err| ExprErr { err: Box::new(err) })?;
+                .map_err_as_cause(|| ExprErr)?;
 
             let path = if let NodeSet::One(path) = res {
                 if path.is_string() {
@@ -260,7 +254,7 @@ fn render_recursive<'a>(
             let template_str = match kg_diag::io::fs::read_string(path).into_diag_res() {
                 Ok(t) => t,
                 Err(err) => {
-                    return Err(IoErr { err: Box::new(err) }.into());
+                    return Err(IoErr.with_cause(err));
                 }
             };
 
@@ -269,7 +263,7 @@ fn render_recursive<'a>(
             let template = match Parser::new().parse(&mut r) {
                 Ok(t) => t,
                 Err(err) => {
-                    return Err(ParseErr { err: Box::new(err) }.into());
+                    return Err(ParseErr.with_cause(err));
                 }
             };
 
