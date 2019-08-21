@@ -171,7 +171,7 @@ impl Parser {
         #[inline]
         fn consume_rest(
             r: &mut dyn CharReader,
-            f: &dyn Fn(char) -> bool,
+            f: &mut dyn FnMut(char) -> bool,
             t: Terminal,
         ) -> Result<Token, Error> {
             let p1 = r.position();
@@ -316,7 +316,7 @@ impl Parser {
                                 if r.match_str("def")? {
                                     consume(r, 3, Terminal::KwDef)
                                 } else {
-                                    consume_rest(r, &is_id_rest, Terminal::Id)
+                                    consume_rest(r, &mut is_id_rest, Terminal::Id)
                                 }
                             }
                             Some('e') => {
@@ -327,14 +327,14 @@ impl Parser {
                                 } else if r.match_str("end")? {
                                     consume(r, 3, Terminal::KwEnd)
                                 } else {
-                                    consume_rest(r, &is_id_rest, Terminal::Id)
+                                    consume_rest(r, &mut is_id_rest, Terminal::Id)
                                 }
                             }
                             Some('f') => {
                                 if r.match_str("for")? {
                                     consume(r, 3, Terminal::KwFor)
                                 } else {
-                                    consume_rest(r, &is_id_rest, Terminal::Id)
+                                    consume_rest(r, &mut is_id_rest, Terminal::Id)
                                 }
                             }
                             Some('i') => {
@@ -343,24 +343,24 @@ impl Parser {
                                 } else if r.match_str("include")? {
                                     consume(r, 7, Terminal::KwInclude)
                                 } else {
-                                    consume_rest(r, &is_id_rest, Terminal::Id)
+                                    consume_rest(r, &mut is_id_rest, Terminal::Id)
                                 }
                             }
                             Some('s') => {
                                 if r.match_str("set")? {
                                     consume(r, 3, Terminal::KwSet)
                                 } else {
-                                    consume_rest(r, &is_id_rest, Terminal::Id)
+                                    consume_rest(r, &mut is_id_rest, Terminal::Id)
                                 }
                             }
                             Some('p') => {
                                 if r.match_str("print")? {
                                     consume(r, 5, Terminal::KwPrint)
                                 } else {
-                                    consume_rest(r, &is_id_rest, Terminal::Id)
+                                    consume_rest(r, &mut is_id_rest, Terminal::Id)
                                 }
                             }
-                            Some(c) if is_id_first(c) => consume_rest(r, &is_id_rest, Terminal::Id),
+                            Some(c) if is_id_first(c) => consume_rest(r, &mut is_id_rest, Terminal::Id),
                             Some(_) => consume(r, 1, Terminal::Unknown),
                         }
                     }
@@ -391,12 +391,12 @@ impl Parser {
                                 if r.match_str("in")? {
                                     consume(r, 2, Terminal::KwIn)
                                 } else {
-                                    consume_rest(r, &is_id_rest, Terminal::Id)
+                                    consume_rest(r, &mut is_id_rest, Terminal::Id)
                                 }
                             }
-                            Some(c) if is_id_first(c) => consume_rest(r, &is_id_rest, Terminal::Id),
+                            Some(c) if is_id_first(c) => consume_rest(r, &mut is_id_rest, Terminal::Id),
                             Some(c) if is_var_first(c) => {
-                                consume_rest(r, &is_var_rest, Terminal::Var)
+                                consume_rest(r, &mut is_var_rest, Terminal::Var)
                             }
                             Some(_) => consume(r, 1, Terminal::Unknown),
                         }
