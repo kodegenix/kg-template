@@ -281,12 +281,8 @@ impl Parser {
                                     || r.match_str(&self.config.directive_formal_open)?
                                     || r.match_str(&self.config.block_open)?
                                     || r.match_str(&self.config.interpolation_open)?
-                                {
-                                    let p2 = r.position();
-                                    return Ok(Token::new(Terminal::Text, p1, p2));
-                                } else if block
-                                    && self.config.mode == Mode::Protected
-                                    && r.match_str(&self.config.statement_block_close)?
+                                    || (block && self.config.mode == Mode::Protected
+                                        && r.match_str(&self.config.statement_block_close)?)
                                 {
                                     let p2 = r.position();
                                     return Ok(Token::new(Terminal::Text, p1, p2));
