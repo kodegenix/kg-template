@@ -1,4 +1,4 @@
-#![feature(specialization)]
+#![feature(min_specialization)]
 
 #[macro_use]
 extern crate kg_diag_derive;
